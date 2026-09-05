@@ -124,17 +124,21 @@ function StoryboardCanvas() {
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col bg-slate-50 text-slate-900">
-      <header className="z-10 flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-5 py-3 shadow-sm">
-        <div className="shrink-0">
-          <p className="text-base font-extrabold tracking-tight text-slate-900">
-            HEX<span className="text-emerald-600">CODED</span>
-          </p>
-          <p className="hidden text-[10px] font-medium uppercase tracking-[0.16em] text-slate-400 sm:block">
-            AI Creative Studio
-          </p>
+      <header className="relative z-10 flex flex-wrap items-center justify-between gap-4 shrink-0 border-b border-slate-200 bg-white px-5 py-3 shadow-sm">
+        {/* Left: Logo */}
+        <div className="flex items-center space-x-2 shrink-0">
+          <div>
+            <p className="text-base font-extrabold tracking-tight text-slate-900">
+              HEX<span className="text-emerald-600">CODED</span>
+            </p>
+            <p className="hidden text-[10px] font-medium uppercase tracking-[0.16em] text-slate-400 sm:block">
+              AI Creative Studio
+            </p>
+          </div>
         </div>
 
-        <div className="ml-auto flex w-full max-w-3xl items-center justify-end gap-2">
+        {/* Center/Flexible: URL Input */}
+        <div className="flex-1 min-w-[260px] max-w-[500px] mx-auto">
           <input
             type="url"
             value={url}
@@ -143,9 +147,12 @@ function StoryboardCanvas() {
               if (event.key === "Enter") generateStoryboard();
             }}
             placeholder="Paste a product URL"
-            className="h-10 min-w-0 flex-1 max-w-lg rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+            className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
           />
+        </div>
 
+        {/* Right: Button */}
+        <div className="flex items-center shrink-0">
           <button
             type="button"
             onClick={generateStoryboard}
