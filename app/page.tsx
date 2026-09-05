@@ -124,7 +124,7 @@ function StoryboardCanvas() {
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col bg-slate-50 text-slate-900">
-      <header className="z-10 flex shrink-0 items-center gap-4 border-b border-slate-200 bg-white px-5 py-3 shadow-sm">
+      <header className="z-10 flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-5 py-3 shadow-sm">
         <div className="shrink-0">
           <p className="text-base font-extrabold tracking-tight text-slate-900">
             HEX<span className="text-emerald-600">CODED</span>
@@ -134,7 +134,7 @@ function StoryboardCanvas() {
           </p>
         </div>
 
-        <div className="mx-auto flex w-full max-w-3xl items-center gap-2">
+        <div className="ml-auto flex w-full max-w-3xl items-center justify-end gap-2">
           <input
             type="url"
             value={url}
@@ -143,7 +143,7 @@ function StoryboardCanvas() {
               if (event.key === "Enter") generateStoryboard();
             }}
             placeholder="Paste a product URL"
-            className="h-10 min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+            className="h-10 min-w-0 flex-1 max-w-lg rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
           />
 
           <button
