@@ -1,69 +1,220 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useCallback, useEffect, useState } from "react";
+import {
+  Background,
+  Controls,
+  ReactFlow,
+  ReactFlowProvider,
+  addEdge,
+  useEdgesState,
+  useNodesState,
+  useReactFlow,
+  type Connection,
+  type Edge,
+  type NodeTypes,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+
+import { RouterNode, type RouterNodeType } from "@/components/nodes/RouterNode";
+import { ScriptNode, type ScriptNodeType } from "@/components/nodes/ScriptNode";
+import { SourceNode, type SourceNodeType } from "@/components/nodes/SourceNode";
+import { VisualNode, type VisualNodeType } from "@/components/nodes/VisualNode";
+
+const NODE_SPACING_X = 350;
+
+const nodeTypes = {
+  source: SourceNode,
+  script: ScriptNode,
+  visual: VisualNode,
+  router: RouterNode,
+} satisfies NodeTypes;
+
+type StoryboardNode =
+  | SourceNodeType
+  | ScriptNodeType
+  | VisualNodeType
+  | RouterNodeType;
+
+type PipelineNode = {
+  type: StoryboardNode["type"];
+  data: StoryboardNode["data"];
+};
+
+function StoryboardCanvas() {
+  const [url, setUrl] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [nodes, setNodes, onNodesChange] = useNodesState<StoryboardNode>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const { fitView } = useReactFlow();
+
+  const onConnect = useCallback(
+    (connection: Connection) => {
+      setEdges((current) =>
+        addEdge(
+          {
+            ...connection,
+            animated: true,
+            style: { stroke: "#10B981", strokeWidth: 2 },
+          },
+          current,
+        ),
+      );
+    },
+    [setEdges],
+  );
+
+  const generateStoryboard = useCallback(async () => {
+    if (!url.trim()) {
+      setError("Paste a product URL to generate a storyboard.");
+      return;
+    }
+
+    setIsGenerating(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/generate-storyboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate storyboard");
+      }
+
+      const pipeline = (await response.json()) as PipelineNode[];
+
+      const nextNodes: StoryboardNode[] = pipeline.map((item, index) => ({
+        id: `${item.type}-${index}`,
+        type: item.type,
+        position: { x: index * NODE_SPACING_X, y: 80 },
+        data: item.data,
+      })) as StoryboardNode[];
+
+      let nextEdges: Edge[] = [];
+
+      for (let index = 0; index < nextNodes.length - 1; index += 1) {
+        nextEdges = addEdge(
+          {
+            id: `e-${nextNodes[index].id}-${nextNodes[index + 1].id}`,
+            source: nextNodes[index].id,
+            target: nextNodes[index + 1].id,
+            animated: true,
+            style: { stroke: "#10B981", strokeWidth: 2 },
+          },
+          nextEdges,
+        );
+      }
+
+      setNodes(nextNodes);
+      setEdges(nextEdges);
+
+      requestAnimationFrame(() => {
+        fitView({ padding: 0.2, duration: 400 });
+      });
+    } catch {
+      setError("Could not generate the storyboard. Try again.");
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [fitView, setEdges, setNodes, url]);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="flex h-full min-h-0 flex-1 flex-col bg-slate-50 text-slate-900">
+      <header className="z-10 flex shrink-0 items-center gap-4 border-b border-slate-200 bg-white px-5 py-3 shadow-sm">
+        <div className="shrink-0">
+          <p className="text-base font-extrabold tracking-tight text-slate-900">
+            HEX<span className="text-emerald-600">CODED</span>
+          </p>
+          <p className="hidden text-[10px] font-medium uppercase tracking-[0.16em] text-slate-400 sm:block">
+            AI Creative Studio
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        <div className="mx-auto flex w-full max-w-3xl items-center gap-2">
+          <input
+            type="url"
+            value={url}
+            onChange={(event) => setUrl(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") generateStoryboard();
+            }}
+            placeholder="Paste a product URL"
+            className="h-10 min-w-0 flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+          />
+
+          <button
+            type="button"
+            onClick={generateStoryboard}
+            disabled={isGenerating}
+            className="h-10 shrink-0 rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            {isGenerating ? "Generating…" : "Generate Storyboard"}
+            {!isGenerating && <span className="ml-2">→</span>}
+          </button>
         </div>
-      </main>
+      </header>
+
+      {error ? (
+        <p className="border-b border-red-100 bg-red-50 px-5 py-2 text-sm text-red-600">
+          {error}
+        </p>
+      ) : null}
+
+      <div className="relative min-h-0 flex-1 overflow-hidden bg-slate-50">
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          nodeTypes={nodeTypes}
+          colorMode="light"
+          fitView
+          defaultEdgeOptions={{
+            animated: true,
+            style: { stroke: "#10B981", strokeWidth: 2 },
+          }}
+          proOptions={{ hideAttribution: true }}
+        >
+          <Background color="#CBD5E1" gap={24} size={1.2} />
+          <Controls className="!overflow-hidden !rounded-xl !border !border-slate-200 !bg-white !shadow-sm" />
+        </ReactFlow>
+
+        {nodes.length === 0 ? (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <div className="rounded-xl border border-slate-200 bg-white px-5 py-4 text-center shadow-sm">
+              <p className="text-sm font-semibold text-slate-800">
+                Build your creative pipeline
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                Paste a product URL above and generate a storyboard.
+              </p>
+            </div>
+          </div>
+        ) : null}
+      </div>
     </div>
+  );
+}
+
+export default function Home() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <div className="h-full flex-1 bg-slate-50" />;
+  }
+
+  return (
+    <ReactFlowProvider>
+      <StoryboardCanvas />
+    </ReactFlowProvider>
   );
 }
